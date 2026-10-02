@@ -322,6 +322,65 @@
             color: #FFD166;
             margin: 10px 0;
         }
+
+        /* Welcome Popup Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 40px 32px;
+            max-width: 460px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-card {
+            transform: translateY(0);
+        }
+        .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            font-size: 1.4rem;
+            color: var(--gray);
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            background: #FFF5F5;
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 1.8rem;
+        }
     </style>
 </head>
 <body>
@@ -401,7 +460,7 @@
             </div>
             <div class="form-group">
                 <label>Promo Code</label>
-                <input type="text" id="inputPromo" class="form-control" value="WELCOME10">
+                <input type="text" id="inputPromo" class="form-control" value="" placeholder="Enter promo code (e.g. WELCOME10)">
             </div>
 
             <button class="btn" id="btnAddToCart">
@@ -469,6 +528,25 @@
 
     </div>
 
+    <!-- Welcome 10% Discount Newsletter Modal -->
+    <div class="modal-overlay" id="welcomeModal">
+        <div class="modal-card">
+            <button class="close-modal" id="btnCloseModal">&times;</button>
+            <div class="modal-icon">
+                <i class="fa-solid fa-gift"></i>
+            </div>
+            <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 8px;">Get 10% Off Your First Order!</h2>
+            <p style="color: var(--gray); font-size: 0.95rem; margin-bottom: 24px;">Subscribe to our EMEA pet newsletter and receive your exclusive discount code instantly.</p>
+            
+            <form id="newsletterForm">
+                <div class="form-group">
+                    <input type="email" id="newsletterEmail" class="form-control" placeholder="Enter your email address" required>
+                </div>
+                <button type="submit" class="btn">Claim 10% Discount Code</button>
+            </form>
+        </div>
+    </div>
+
     <!-- JavaScript Logic & Background Mixpanel Analytics -->
     <script>
         // Mixpanel Super Properties State
@@ -492,6 +570,41 @@
             };
             console.log("Mixpanel Event Dispatched:", eventPayload);
         }
+
+        // Welcome Popup Logic
+        const welcomeModal = document.getElementById('welcomeModal');
+        const btnCloseModal = document.getElementById('btnCloseModal');
+        const newsletterForm = document.getElementById('newsletterForm');
+
+        // Show popup after 1 second delay
+        setTimeout(() => {
+            welcomeModal.classList.add('active');
+            mixpanelTrack('Welcome Modal Viewed', {
+                modal_type: "10% Welcome Discount"
+            });
+        }, 1000);
+
+        btnCloseModal.addEventListener('click', () => {
+            welcomeModal.classList.remove('active');
+            mixpanelTrack('Welcome Modal Dismissed');
+        });
+
+        newsletterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('newsletterEmail').value;
+            
+            // Auto-fill promo code in the studio form
+            document.getElementById('inputPromo').value = 'WELCOME10';
+
+            mixpanelTrack('Newsletter Subscribed', {
+                email: email,
+                promo_code_issued: "WELCOME10",
+                subscription_source: "Welcome Modal Popup"
+            });
+
+            welcomeModal.classList.remove('active');
+            alert('Thank you for subscribing! Your 10% discount code WELCOME10 has been applied to your checkout form.');
+        });
 
         // Country / Sub-Region Selector Handler
         document.getElementById('countrySelect').addEventListener('change', (e) => {
@@ -554,7 +667,7 @@
                 pet_type: selectedPetSpecies,
                 accessory_category: "Bespoke Engraved Collars & Tags",
                 bundle_type: "Individual Item",
-                promo_code: document.getElementById('inputPromo').value
+                promo_code: document.getElementById('inputPromo').value || "NONE"
             });
 
             alert('Customized Engraved Tag added to your cart!');
